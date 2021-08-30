@@ -560,16 +560,16 @@ func (m *Mock) AssertCalled(t TestingT, methodName string, arguments ...interfac
 	m.mutex.Lock()
 	defer m.mutex.Unlock()
 	if !m.methodWasCalled(methodName, arguments) {
-		var calledWithArgs []string
+		var calledWith []string
 		for _, call := range m.calls() {
-			calledWithArgs = append(calledWithArgs, fmt.Sprintf("%v", call.Arguments))
+			calledWith = append(calledWith, fmt.Sprintf("%v\t%v", call.Method, call.Arguments))
 		}
-		if len(calledWithArgs) == 0 {
+		if len(calledWith) == 0 {
 			return assert.Fail(t, "Should have called with given arguments",
 				fmt.Sprintf("Expected %q to have been called with:\n%v\nbut no actual calls happened", methodName, arguments))
 		}
 		return assert.Fail(t, "Should have called with given arguments",
-			fmt.Sprintf("Expected %q to have been called with:\n%v\nbut actual calls were:\n        %v", methodName, arguments, strings.Join(calledWithArgs, "\n")))
+			fmt.Sprintf("Expected %q to have been called with:\n%v\nbut actual calls were:\n        %v", methodName, arguments, strings.Join(calledWith, "\n")))
 	}
 	return true
 }

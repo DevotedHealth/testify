@@ -96,6 +96,7 @@ func (i *TestExampleImplementation) TheExampleMethodFuncType(fn ExampleFuncType)
 // MockTestingT mocks a test struct
 type MockTestingT struct {
 	logfCount, errorfCount, failNowCount int
+	errorfCalledWith                     []error
 }
 
 const mockTestingTFailNowCalled = "FailNow was called"
@@ -104,8 +105,9 @@ func (m *MockTestingT) Logf(string, ...interface{}) {
 	m.logfCount++
 }
 
-func (m *MockTestingT) Errorf(string, ...interface{}) {
+func (m *MockTestingT) Errorf(message string, args ...interface{}) {
 	m.errorfCount++
+	m.errorfCalledWith = append(m.errorfCalledWith, fmt.Errorf(message, args...))
 }
 
 // FailNow mocks the FailNow call.
@@ -1139,10 +1141,25 @@ func Test_Mock_AssertCalled_WithAnythingOfTypeArgument(t *testing.T) {
 
 }
 
+func Test_Mock_AssertCalled_WithArguments_Error(t *testing.T) {
+
+	var mockedService = new(TestExampleImplementation)
+	var mockedTest = &MockTestingT{}
+	expectedPartialError := "but actual calls were:\n\t            \t        Test_Mock_AssertCalled_WithArguments\t[1 2 3]\n"
+
+	mockedService.On("Test_Mock_AssertCalled_WithArguments", 1, 2, 3).Return(5, 6, 7)
+	mockedService.On("Test_Mock_AssertCalled_WithArguments_Error", 1, 2, 3).Return(5, 6, 7)
+
+	mockedService.MethodCalled("Test_Mock_AssertCalled_WithArguments", 1, 2, 3)
+
+	assert.False(t, mockedService.AssertCalled(mockedTest, "Test_Mock_AssertCalled_WithArguments_Error", 1, 2, 3))
+	assert.Equal(t, 1, mockedTest.errorfCount)
+	assert.Contains(t, mockedTest.errorfCalledWith[0].Error(), expectedPartialError)
+}
+
 func Test_Mock_AssertCalled_WithArguments(t *testing.T) {
 
 	var mockedService = new(TestExampleImplementation)
-
 	mockedService.On("Test_Mock_AssertCalled_WithArguments", 1, 2, 3).Return(5, 6, 7)
 
 	mockedService.Called(1, 2, 3)
